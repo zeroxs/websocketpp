@@ -72,9 +72,9 @@ public:
     /// Type of a shared pointer to the ASIO socket being used
     typedef lib::shared_ptr<socket_type> socket_ptr;
     /// Type of a pointer to the ASIO io_service being used
-    typedef lib::asio::io_service * io_service_ptr;
+    typedef lib::asio::io_context * io_service_ptr;
     /// Type of a pointer to the ASIO io_service strand being used
-    typedef lib::shared_ptr<lib::asio::io_service::strand> strand_ptr;
+    typedef lib::shared_ptr<lib::asio::io_context::strand> strand_ptr;
     /// Type of a shared pointer to the ASIO TLS context being used
     typedef lib::shared_ptr<lib::asio::ssl::context> context_ptr;
 
@@ -267,7 +267,7 @@ protected:
         if (m_strand) {
             m_socket->async_handshake(
                 get_handshake_type(),
-                m_strand->wrap(lib::bind(
+                lib::asio::bind_executor(*m_strand, lib::bind(
                     &type::handle_init, get_shared(),
                     callback,
                     lib::placeholders::_1
@@ -327,7 +327,7 @@ protected:
 
     void async_shutdown(socket::shutdown_handler callback) {
         if (m_strand) {
-            m_socket->async_shutdown(m_strand->wrap(callback));
+            m_socket->async_shutdown(lib::asio::bind_executor(*m_strand, callback));
         } else {
             m_socket->async_shutdown(callback);
         }
@@ -355,7 +355,7 @@ protected:
     template <typename ErrorCodeType>
     lib::error_code translate_ec(ErrorCodeType ec) {
         if (ec.category() == lib::asio::error::get_ssl_category()) {
-            if (ERR_GET_REASON(ec.value()) == SSL_R_SHORT_READ) {
+            if (ec == lib::asio::error::eof && ec == lib::asio::ssl::error::stream_truncated) {
                 return make_error_code(transport::error::tls_short_read);
             } else {
                 // We know it is a TLS related error, but otherwise don't know
