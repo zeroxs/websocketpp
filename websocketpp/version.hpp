@@ -28,6 +28,8 @@
 #ifndef WEBSOCKETPP_VERSION_HPP
 #define WEBSOCKETPP_VERSION_HPP
 
+#define FOR_AEGIS 1
+
 /// Namespace for the WebSocket++ project
 namespace websocketpp {
 
