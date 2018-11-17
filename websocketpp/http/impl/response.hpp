@@ -154,6 +154,11 @@ inline size_t response::consume(std::istream & s) {
                 // problem
                 break;
             }
+
+            //read up to the buffer. reset failbit and continue
+            if (bytes_read == istream_buffer - 1)
+                s.clear();
+
         } else if (s.bad()) {
             // problem
             break;
@@ -172,6 +177,7 @@ inline size_t response::consume(std::istream & s) {
         }
     }
 
+    m_state = DONE;
     return total;
 }
 
@@ -236,7 +242,6 @@ inline size_t response::process_body(char const * buf, size_t len) {
     // If no content length was set then we read forever and never set m_ready
     if (m_read == 0) {
         m_body.append(buf,len);
-        m_state = DONE;
         return len;
         //return 0;
     }
